@@ -1,7 +1,5 @@
-import { exec } from 'child_process'
 import { NextResponse } from 'next/server'
-import { readFile, unlink } from 'fs/promises'
-import { randomUUID } from 'crypto'
+import * as googleTTS from 'google-tts-api'
 
 export async function GET(request) {
   const { searchParams } = new URL(request.url)
@@ -14,40 +12,31 @@ export async function GET(request) {
 
   const safeText = text.replace(/[^a-zA-Z\s]/g, '')
 
-  if (stream) {
-    const filename = `/tmp/speak-${randomUUID()}.aiff`
+  try {
+    const audioUrl = googleTTS.getAudioUrl(safeText, {
+      lang: 'en',
+      slow: false,
+      host: 'https://translate.google.com',
+    })
 
-    return new Promise((resolve) => {
-      exec(`say -v Samantha -r 120 -o "${filename}" "${safeText}"`, async (error) => {
-        if (error) {
-          resolve(NextResponse.json({ error: '發音失敗' }, { status: 500 }))
-          return
-        }
+    if (stream) {
+      const response = await fetch(audioUrl)
+      if (!response.ok) {
+        return NextResponse.json({ error: '獲取語音失敗' }, { status: 500 })
+      }
 
-        try {
-          const audioData = await readFile(filename)
-          await unlink(filename)
+      const audioData = await response.arrayBuffer()
 
-          resolve(new NextResponse(audioData, {
-            headers: {
-              'Content-Type': 'audio/aiff',
-              'Content-Length': audioData.length.toString()
-            }
-          }))
-        } catch {
-          resolve(NextResponse.json({ error: '讀取音檔失敗' }, { status: 500 }))
+      return new NextResponse(audioData, {
+        headers: {
+          'Content-Type': 'audio/mpeg',
+          'Content-Length': audioData.byteLength.toString()
         }
       })
-    })
-  }
+    }
 
-  return new Promise((resolve) => {
-    exec(`say -v Samantha -r 120 "${safeText}"`, (error) => {
-      if (error) {
-        resolve(NextResponse.json({ error: '發音失敗' }, { status: 500 }))
-      } else {
-        resolve(NextResponse.json({ success: true }))
-      }
-    })
-  })
+    return NextResponse.json({ success: true, audioUrl })
+  } catch (error) {
+    return NextResponse.json({ error: '發音失敗' }, { status: 500 })
+  }
 }

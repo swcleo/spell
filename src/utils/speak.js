@@ -22,19 +22,14 @@ export const speak = async (text) => {
   }
 
   try {
-    if (isLocalhost()) {
-      const res = await fetch(`/api/speak?text=${encodeURIComponent(text)}`)
-      if (!res.ok) throw new Error('API failed')
-    } else {
-      const res = await fetch(`/api/speak?text=${encodeURIComponent(text)}&stream=true`)
-      if (!res.ok) throw new Error('API failed')
+    const res = await fetch(`/api/speak?text=${encodeURIComponent(text)}&stream=true`)
+    if (!res.ok) throw new Error('API failed')
 
-      const blob = await res.blob()
-      const url = URL.createObjectURL(blob)
-      currentAudio = new Audio(url)
-      currentAudio.onended = () => URL.revokeObjectURL(url)
-      await currentAudio.play()
-    }
+    const blob = await res.blob()
+    const url = URL.createObjectURL(blob)
+    currentAudio = new Audio(url)
+    currentAudio.onended = () => URL.revokeObjectURL(url)
+    await currentAudio.play()
   } catch {
     window.speechSynthesis.cancel()
     const utterance = new SpeechSynthesisUtterance(text)
