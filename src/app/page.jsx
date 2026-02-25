@@ -5,8 +5,9 @@ import { Container, Paper, Typography, Box } from '@mui/material'
 import InputSection from '../components/InputSection'
 import PracticeSection from '../components/PracticeSection'
 import CompleteSection from '../components/CompleteSection'
+import LoadingSection from '../components/LoadingSection'
 import useLocalStorage from '../hooks/useLocalStorage'
-import { shuffle, parseWords } from '../utils/speak'
+import { shuffle, parseWords, preloadAllAudio, clearAudioCache } from '../utils/speak'
 
 export default function Home() {
   const [view, setView] = useState('input')
@@ -15,13 +16,27 @@ export default function Home() {
   const [currentIndex, setCurrentIndex] = useState(0)
   const [correctCount, setCorrectCount] = useState(0)
   const [wrongCount, setWrongCount] = useState(0)
+  const [loadingProgress, setLoadingProgress] = useState({ loaded: 0, total: 0 })
 
-  const startPractice = (wordList) => {
+  const startPractice = async (wordList) => {
     const shuffled = shuffle(wordList)
-    setWords(shuffled)
     setCurrentIndex(0)
     setCorrectCount(0)
     setWrongCount(0)
+    setView('loading')
+    setLoadingProgress({ loaded: 0, total: shuffled.length })
+
+    const successfulWords = await preloadAllAudio(shuffled, (loaded, total) => {
+      setLoadingProgress({ loaded, total })
+    })
+
+    if (successfulWords.length === 0) {
+      alert('無法載入任何音檔，請檢查網路連線')
+      setView('input')
+      return
+    }
+
+    setWords(successfulWords)
     setView('practice')
   }
 
@@ -41,7 +56,12 @@ export default function Home() {
     }
   }
 
+  const handleEnd = () => {
+    setView('complete')
+  }
+
   const restart = () => {
+    clearAudioCache()
     setView('input')
     setWords([])
   }
@@ -100,6 +120,13 @@ export default function Home() {
             />
           )}
 
+          {view === 'loading' && (
+            <LoadingSection
+              loaded={loadingProgress.loaded}
+              total={loadingProgress.total}
+            />
+          )}
+
           {view === 'practice' && (
             <PracticeSection
               words={words}
@@ -107,6 +134,7 @@ export default function Home() {
               onCorrect={handleCorrect}
               onWrong={handleWrong}
               onNext={nextWord}
+              onEnd={handleEnd}
             />
           )}
 

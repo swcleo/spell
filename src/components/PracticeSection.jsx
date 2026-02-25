@@ -19,7 +19,7 @@ import {
 } from '@mui/icons-material'
 import { speak } from '../utils/speak'
 
-const PracticeSection = ({ words, currentIndex, onCorrect, onWrong, onNext }) => {
+const PracticeSection = ({ words, currentIndex, onCorrect, onWrong, onNext, onEnd }) => {
   const [answer, setAnswer] = useState('')
   const [hasAnswered, setHasAnswered] = useState(false)
   const [isCorrect, setIsCorrect] = useState(false)
@@ -96,16 +96,6 @@ const PracticeSection = ({ words, currentIndex, onCorrect, onWrong, onNext }) =>
         {currentIndex + 1} / {words.length}
       </Typography>
 
-      <Button
-        variant="contained"
-        size="large"
-        startIcon={<VolumeUp />}
-        onClick={() => speak(currentWord)}
-        sx={{ mb: 4, py: 2, px: 4, fontSize: '1.1rem' }}
-      >
-        播放發音
-      </Button>
-
       <TextField
         fullWidth
         variant="outlined"
@@ -169,13 +159,21 @@ const PracticeSection = ({ words, currentIndex, onCorrect, onWrong, onNext }) =>
           >
             {isCorrect ? '正確！' : `錯誤！正確答案：${currentWord}`}
           </Alert>
-          <Button
-            variant="contained"
-            startIcon={<NavigateNext />}
-            onClick={onNext}
-          >
-            下一題
-          </Button>
+          <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
+            <Button
+              variant="contained"
+              startIcon={<NavigateNext />}
+              onClick={onNext}
+            >
+              下一題
+            </Button>
+            <Button
+              variant="outlined"
+              onClick={onEnd}
+            >
+              結束練習
+            </Button>
+          </Box>
         </Box>
       )}
     </Box>
